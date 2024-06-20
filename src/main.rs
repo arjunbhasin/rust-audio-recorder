@@ -94,16 +94,26 @@ fn get_oldest_file_in_directory(directory: &Path) -> std::io::Result<Option<Path
 }
 
 
-fn delete_oldest_file(folder: &Path) -> std::io::Result<()> {
-    if let Some(oldest_directory) = get_oldest_directory(folder)? {
-        if let Some(oldest_file) = get_oldest_file_in_directory(&oldest_directory)? {
-            fs::remove_file(&oldest_file)?;
-            println!("Deleted oldest file: {:?}", oldest_file);
+fn delete_oldest_file(folder: &Path) -> io::Result<()> {
+    let mut retry = true;
+    while retry {
+        retry = false;
+
+        if let Some(oldest_directory) = get_oldest_directory(folder)? {
+            if let Some(oldest_file) = get_oldest_file_in_directory(&oldest_directory)? {
+                fs::remove_file(&oldest_file)?;
+                println!("Deleted oldest file: {:?}", oldest_file);
+            } else {
+                // No files found in the oldest directory, so delete the directory
+                fs::remove_dir(&oldest_directory)?;
+                println!("Deleted empty directory: {:?}", oldest_directory);
+
+                // Retry deleting the oldest file in the folder containing audio files
+                retry = true;
+            }
         } else {
-            println!("No files found in the oldest directory.");
+            println!("No directories found.");
         }
-    } else {
-        println!("No directories found.");
     }
     Ok(())
 }
