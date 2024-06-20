@@ -94,7 +94,7 @@ fn get_oldest_file_in_directory(directory: &Path) -> std::io::Result<Option<Path
 }
 
 
-fn delete_oldest_file(folder: &Path) -> io::Result<()> {
+fn delete_oldest_file(folder: &Path) -> std::io::Result<()> {
     let mut retry = true;
     while retry {
         retry = false;
