@@ -9,6 +9,10 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use chrono::prelude::*;
 use std::str;
+use std::env;
+
+const RECORD_SECONDS: u64 = 60;
+const MAX_FOLDER_SIZE: u64 = 7 * 1024 * 1024 * 1024;
 
 #[derive(Parser, Debug)]
 #[command(version, about = "CPAL record_wav example", long_about = None)]
@@ -32,9 +36,6 @@ struct Opt {
     jack: bool,
 }
 
-const RECORD_SECONDS: u64 = 60;
-const BASE_FOLDER: &str = "/home/orangepi/workspace/audio_recordings";
-const MAX_FOLDER_SIZE: u64 = 2 * 1024 * 1024 * 1024;
 
 fn get_folder_size(folder: &Path) -> std::io::Result<u64> {
     let output = Command::new("du")
@@ -127,6 +128,8 @@ fn ensure_folder_size(folder: &Path, max_size: u64) -> std::io::Result<()> {
 }
 
 fn main() -> Result<(), anyhow::Error> {
+    let base_folder:String = env::var("BASE_FOLDER").unwrap_or("/mnt/samba_share/audio_recordings/opi_1".to_string());
+
     let opt = Opt::parse();
 
     #[cfg(all(
@@ -177,7 +180,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     loop {
         let date_folder = Local::now().format("%Y-%m-%d").to_string();
-        let save_folder = Path::new(BASE_FOLDER).join(&date_folder);
+        let save_folder = Path::new(&base_folder).join(&date_folder);
         if !save_folder.exists() {
             fs::create_dir_all(&save_folder)?;
         }
@@ -185,7 +188,7 @@ fn main() -> Result<(), anyhow::Error> {
         let timestamp = Local::now().format("%H-%M").to_string();
         let filename = save_folder.join(&timestamp).with_extension("wav");
 
-        ensure_folder_size(Path::new(BASE_FOLDER), MAX_FOLDER_SIZE)?;
+        ensure_folder_size(Path::new(&base_folder), MAX_FOLDER_SIZE)?;
 
         let spec = wav_spec_from_config(&config);
         let writer = hound::WavWriter::create(&filename, spec)?;
